@@ -60,6 +60,10 @@ The card allows the following customization options:
 * Change the texts visible on the arming mode buttons and the text visible when the alarm is in this state.
 * Change the title of the alarm.
 
+### Play a sound when arming or pending
+The card allows you to provide a url to an sound file that is played when the alarm is arming or pending.
+
+If the file is placed in the www folder of your Home Assistant instance, you can use a url like `/local/alarm_arming.mp3`.
 
 ## Installation
 <details>

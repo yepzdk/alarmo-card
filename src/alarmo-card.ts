@@ -21,6 +21,7 @@ import './components/alarmo-sensor-badge';
 import './components/alarmo-button';
 import './components/alarmo-code-dialog';
 import './components/alarmo-actions-bar';
+import { PendingSound } from './components/alarmo-pendingsound';
 
 import { SubscribeMixin } from './subscribe-mixin';
 import { localize } from './localize/localize';
@@ -76,6 +77,8 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
 
   _codeClearTimer = 0;
 
+  pendingSound?: PendingSound;
+
   _last_command?: string;
   _last_code?: string;
 
@@ -123,12 +126,18 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
     ];
   }
 
+  private initPendingSound() {
+    if (!this._config || !this.hass) return;
+    this.pendingSound = new PendingSound(this._config.pending_sound);
+  }
+
   async firstUpdated() {
     //load the checkbox element
     const ch = await (window as any).loadCardHelpers();
     const c = await ch.createCardElement({ type: 'entities', entities: [] });
     await c.constructor.getConfigElement();
     await this.loadBackendConfig();
+    this.initPendingSound();
   }
 
   async loadBackendConfig() {
@@ -210,6 +219,9 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
     if (newState.state != oldState.state) {
       //stop watching entities (blocking or triggered sensors)
       this.subscribedEntities = [];
+
+      // Stop pending sound
+      this.pendingSound?.stopSound();
     }
 
     if (newState.state == AlarmStates.Disarmed) {
@@ -218,6 +230,11 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
     } else if (newState.last_changed !== oldState.last_changed) {
       //assume the state was changed although not detected
       this._clearCode();
+    }
+
+    if (newState.state == AlarmStates.Pending || newState.state == AlarmStates.Arming) {
+      // Play pending sound on arming and pending
+      this.pendingSound?.playSound();
     }
   }
 

@@ -14,6 +14,7 @@ export type CardConfig = {
   show_bypassed_sensors: boolean;
   use_code_dialog: boolean;
   hide_keypad: boolean;
+  pending_sound: string;
 };
 
 export type HideOptions = 'always' | 'never' | 'disarmed' | 'armed';

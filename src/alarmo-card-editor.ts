@@ -38,10 +38,10 @@ export class AlarmoCardEditor extends LitElement implements LovelaceCardEditor {
 
   async firstUpdated() {
     fetchEntities(this.hass!)
-      .then(res => {
-        this._entities = res.map(e => e.entity_id);
+      .then((res) => {
+        this._entities = res.map((e) => e.entity_id);
       })
-      .catch(_e => {
+      .catch((_e) => {
         this.hass?.callService('system_log', 'write', {
           message: `Failed to fetch entities: ${_e}`,
           level: 'error',
@@ -103,9 +103,9 @@ export class AlarmoCardEditor extends LitElement implements LovelaceCardEditor {
             ?checked=${!stateConfig.hide}
             ?disabled=${(!stateConfig.hide &&
               calcSupportedActions(stateObj!)
-                .map(e => ActionToState[e])
-                .filter(e => !calcStateConfig(e, this._config!).hide).length == 1) ||
-              this._editAction == ArmActions.Disarm}
+                .map((e) => ActionToState[e])
+                .filter((e) => !calcStateConfig(e, this._config!).hide).length == 1) ||
+            this._editAction == ArmActions.Disarm}
             @change=${(ev: Event) =>
               this._updateStateConfig(
                 ActionToState[this._editAction!],
@@ -181,16 +181,16 @@ export class AlarmoCardEditor extends LitElement implements LovelaceCardEditor {
                 <span>${localize('editor.available_actions', this.hass.language)}</span>
               </div>
               <div class="config-row checkbox-list">
-                ${[...calcSupportedActions(stateObj), ArmActions.Disarm].map(e => {
-                  const supportedStates = calcSupportedActions(stateObj).map(e => ActionToState[e]);
+                ${[...calcSupportedActions(stateObj), ArmActions.Disarm].map((e) => {
+                  const supportedStates = calcSupportedActions(stateObj).map((e) => ActionToState[e]);
                   const isHidden = calcStateConfig(ActionToState[e], this._config!).hide;
                   return html`
                     <div class="checkbox-item ${isHidden ? 'disabled' : ''}">
                       <ha-checkbox
                         ?checked=${!isHidden}
                         ?disabled=${(!isHidden &&
-                          supportedStates.filter(el => !calcStateConfig(el, this._config!).hide).length == 1) ||
-                          e == ArmActions.Disarm}
+                          supportedStates.filter((el) => !calcStateConfig(el, this._config!).hide).length == 1) ||
+                        e == ArmActions.Disarm}
                         @change=${(ev: Event) =>
                           this._updateStateConfig(
                             ActionToState[e],
@@ -268,8 +268,8 @@ export class AlarmoCardEditor extends LitElement implements LovelaceCardEditor {
               @change=${(ev: Event) =>
                 this._updateConfig('keep_keypad_visible', (ev.target as HTMLInputElement).checked)}
               ?disabled=${!stateObj ||
-                !hasKeypad ||
-                this._alarmoConfig?.code_arm_required == this._alarmoConfig?.code_disarm_required}
+              !hasKeypad ||
+              this._alarmoConfig?.code_arm_required == this._alarmoConfig?.code_disarm_required}
             ></ha-switch
           ></ha-formfield>
 
@@ -288,6 +288,15 @@ export class AlarmoCardEditor extends LitElement implements LovelaceCardEditor {
                 this._updateConfig('show_bypassed_sensors', (ev.target as HTMLInputElement).checked)}
             ></ha-switch
           ></ha-formfield>
+
+          <ha-textfield
+            .label="${localize('editor.pending_sound', this.hass.language)} (${this.hass.localize(
+              'ui.panel.lovelace.editor.card.config.optional'
+            )})"
+            .value="${this._config!.pending_sound || ''}"
+            @input=${(ev: Event) =>
+              this._updateConfig('pending_sound', String((ev.target as HTMLInputElement).value).trim())}
+          ></ha-textfield>
 
           <ha-formfield></ha-formfield>
         </div>
@@ -310,10 +319,10 @@ export class AlarmoCardEditor extends LitElement implements LovelaceCardEditor {
   }
 
   private _updateStateConfig(state: AlarmStates, config: Partial<StateConfig>) {
-    const removeUndefined = obj =>
+    const removeUndefined = (obj) =>
       pick(
         obj,
-        Object.keys(obj).filter(e => !isEmpty(obj[e]))
+        Object.keys(obj).filter((e) => !isEmpty(obj[e]))
       );
 
     let stateConfig = this._config?.states || {};

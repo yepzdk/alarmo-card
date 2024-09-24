@@ -21,6 +21,8 @@ import './alarmo-card-editor';
 import './components/alarmo-state-badge';
 import './components/alarmo-sensor-badge';
 import './components/alarmo-button';
+// import { PendingSound } from './components/alarmo-pendingsound';
+import { PendingSound } from './components/alarmo-pendingsound';
 
 import { SubscribeMixin } from './subscribe-mixin';
 import { localize } from './localize/localize';
@@ -72,15 +74,17 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
 
   _codeClearTimer = 0;
 
+  pendingSound?: PendingSound;
+
   public static async getConfigElement() {
     await import('./alarmo-card-editor');
     return document.createElement('alarmo-card-editor');
   }
 
   public static async getStubConfig(hass: HomeAssistant): Promise<Partial<CardConfig>> {
-    let defaultEntity = Object.keys(hass.states).find(e => computeDomain(e) == 'alarm_control_panel');
+    let defaultEntity = Object.keys(hass.states).find((e) => computeDomain(e) == 'alarm_control_panel');
 
-    await fetchEntities(hass).then(res => {
+    await fetchEntities(hass).then((res) => {
       const sorted = res.sort((a, b) => Number(a.area_id) - Number(b.area_id));
       if (sorted.length) defaultEntity = sorted[0].entity_id;
     });
@@ -89,6 +93,11 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
       type: `custom:alarmo-card`,
       entity: defaultEntity,
     };
+  }
+
+  private initPendingSound() {
+    if (!this._config || !this.hass) return;
+    this.pendingSound = new PendingSound(this._config.pending_sound);
   }
 
   public async getCardSize(): Promise<number> {
@@ -112,7 +121,7 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
 
   public hassSubscribe(): Promise<UnsubscribeFunc>[] {
     return [
-      this.hass!.connection.subscribeMessage(ev => this._fetchData((ev as unknown) as AlarmoEvent), { type: EVENT }),
+      this.hass!.connection.subscribeMessage((ev) => this._fetchData(ev as unknown as AlarmoEvent), { type: EVENT }),
     ];
   }
 
@@ -122,25 +131,26 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
     const c = await ch.createCardElement({ type: 'entities', entities: [] });
     await c.constructor.getConfigElement();
     await this.loadBackendConfig();
+    this.initPendingSound();
   }
 
   async loadBackendConfig() {
     if (this.backendConnection) return;
     fetchEntities(this.hass!)
-      .then(res => {
-        const match = res.find(e => e.entity_id == this._config!.entity);
+      .then((res) => {
+        const match = res.find((e) => e.entity_id == this._config!.entity);
         if (match) this.area_id = match.area_id ? match.area_id : null;
       })
       .then(() => fetchConfig(this.hass!))
-      .then(res => {
+      .then((res) => {
         this._alarmoConfig = res;
         this.backendConnection = true;
       })
       .then(() => fetchReadyToArmModes(this.hass!, this._config!.entity))
-      .then(res => {
+      .then((res) => {
         this.readyForArmModes = res.modes;
       })
-      .catch(_e => {
+      .catch((_e) => {
         this.backendConnection = false;
       });
   }
@@ -175,7 +185,6 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
 
   protected shouldUpdate(changedProps: PropertyValues): boolean {
     if (changedProps.has('_config')) return true;
-
     const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
     if (
       !oldHass ||
@@ -189,10 +198,11 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
       const newState = this.hass!.states[this._config!.entity] as AlarmoEntity;
       if (this.backendConnection === false) (async () => await this.loadBackendConfig())();
       this.processStateUpdate(oldState, newState);
+
       return true;
     }
     if (this.subscribedEntities.length) {
-      if (this.subscribedEntities.some(e => oldHass.states[e] !== this.hass!.states[e])) return true;
+      if (this.subscribedEntities.some((e) => oldHass.states[e] !== this.hass!.states[e])) return true;
     }
     return false;
   }
@@ -201,6 +211,9 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
     if (newState.state != oldState.state) {
       //stop watching entities (blocking or triggered sensors)
       this.subscribedEntities = [];
+
+      // Stop pending sound
+      this.pendingSound?.stopSound();
     }
 
     if (newState.state == AlarmStates.Disarmed) {
@@ -209,6 +222,11 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
     } else if (newState.last_changed !== oldState.last_changed) {
       //assume the state was changed although not detected
       this._clearCode();
+    }
+
+    if (newState.state == AlarmStates.Pending || newState.state == AlarmStates.Arming) {
+      // Play pending sound on arming and pending
+      this.pendingSound?.playSound();
     }
   }
 
@@ -253,9 +271,7 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
                 <ha-icon-button slot="trigger" .label=${this.hass.localize('ui.common.menu')} .path=${mdiDotsVertical}>
                 </ha-icon-button>
                 <mwc-list-item noninteractive>
-                  <span class="title">
-                    ${localize('arm_options.heading', this.hass.language)}
-                  </span>
+                  <span class="title"> ${localize('arm_options.heading', this.hass.language)} </span>
                 </mwc-list-item>
                 <mwc-list-item graphic="icon">
                   <ha-icon
@@ -294,21 +310,14 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
             </alarmo-state-badge>
           </div>
           <div class="summary">
-            <div class="name">
-              ${computeNameDisplay(stateObj, this._config)}
-            </div>
-            <div class="state">
-              ${computeStateDisplay(stateObj, this.hass.localize, this._config)}
-            </div>
+            <div class="name">${computeNameDisplay(stateObj, this._config)}</div>
+            <div class="state">${computeStateDisplay(stateObj, this.hass.localize, this._config)}</div>
           </div>
         </div>
 
         ${this._renderWarning()}
 
-        <div id="armActions" class="actions">
-          ${this._renderActions()}
-        </div>
-
+        <div id="armActions" class="actions">${this._renderActions()}</div>
         ${!codeRequired(stateObj) && !this._config.keep_keypad_visible
           ? html``
           : html`
@@ -332,7 +341,7 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
           ? html``
           : html`
               <div id="keypad" style="max-width: ${this._config.button_scale_keypad * 300}px">
-                ${BUTTONS.map(value => {
+                ${BUTTONS.map((value) => {
                   return value === ''
                     ? html`
                         <alarmo-button
@@ -352,15 +361,9 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
                         >
                           ${value === 'clear'
                             ? this._config!.use_clear_icon
-                              ? html`
-                                  <ha-icon icon="hass:backspace-outline"></ha-icon>
-                                `
-                              : html`
-                                  <span>${this.hass!.localize(`ui.card.alarm_control_panel.clear_code`)}</span>
-                                `
-                            : html`
-                                <span>${value}</span>
-                              `}
+                              ? html` <ha-icon icon="hass:backspace-outline"></ha-icon> `
+                              : html` <span>${this.hass!.localize(`ui.card.alarm_control_panel.clear_code`)}</span> `
+                            : html` <span>${value}</span> `}
                         </alarmo-button>
                       `;
                 })}
@@ -376,12 +379,12 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
 
     const actions =
       stateObj.state === AlarmStates.Disarmed
-        ? calcSupportedActions(stateObj).filter(e => !calcStateConfig(ActionToState[e], this._config!).hide)
+        ? calcSupportedActions(stateObj).filter((e) => !calcStateConfig(ActionToState[e], this._config!).hide)
         : [ArmActions.Disarm];
 
     const showReadyStatus = this._config.show_ready_indicator;
 
-    return actions.map(action => {
+    return actions.map((action) => {
       const stateConfig = calcStateConfig(ActionToState[action], this._config!);
       const readyStatus = Array.isArray(this.readyForArmModes) && this.readyForArmModes.includes(ActionToState[action]);
 
@@ -398,19 +401,15 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
                   style="${this.readyForArmModes === null
                     ? `color: var(--label-badge-grey)`
                     : readyStatus
-                    ? `color: var(--success-color)`
-                    : `color: var(--error-color)`}"
+                      ? `color: var(--success-color)`
+                      : `color: var(--error-color)`}"
                   class="leading"
                 ></ha-icon>
               `
             : ''}
           ${isEmpty(stateConfig.button_label)
-            ? html`
-                <span>${this.hass!.localize(`ui.card.alarm_control_panel.${action}`)}</span>
-              `
-            : html`
-                <span>${stateConfig.button_label}</span>
-              `}
+            ? html` <span>${this.hass!.localize(`ui.card.alarm_control_panel.${action}`)}</span> `
+            : html` <span>${stateConfig.button_label}</span> `}
         </alarmo-button>
       `;
     });
@@ -470,7 +469,7 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
               <div class="description-filler"></div>
             </div>
             <div class="content">
-              ${stateObj.attributes.bypassed_sensors.map(e => {
+              ${stateObj.attributes.bypassed_sensors.map((e) => {
                 if (!this.subscribedEntities.includes(e)) this.subscribedEntities.push(e);
                 return html`
                   <div class="badge">

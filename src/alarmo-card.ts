@@ -253,33 +253,30 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
       <ha-card>
         ${stateObj.state === AlarmStates.Disarmed
         ? html`
-              <ha-button-menu
-                corner="BOTTOM_START"
-                multi
+              <ha-dropdown
+                placement="bottom-end"
                 id="cornerMenu"
               >
                 <ha-icon-button slot="trigger" .label=${this.hass.localize('ui.common.menu')} .path=${mdiDotsVertical}>
                 </ha-icon-button>
-                <mwc-list-item noninteractive>
-                  <span class="title">
-                    ${localize('arm_options.heading', this.hass.language)}
-                  </span>
-                </mwc-list-item>
-                <mwc-list-item graphic="icon" @click=${(ev: Event) => this._toggleArmOptions(ev, 'skip_delay')}>
+                <span class="title">
+                  ${localize('arm_options.heading', this.hass.language)}
+                </span>
+                <ha-dropdown-item @click=${(ev: Event) => this._toggleArmOptions(ev, 'skip_delay')}>
                   <ha-icon
-                    slot="graphic"
-                    icon="${this.armOptions.skip_delay ? 'mdi:check' : ''}"
+                    icon="mdi:check"
+                    style="${this.armOptions.skip_delay ? '' : 'visibility: hidden'}"
                   ></ha-icon>
                   ${localize('arm_options.skip_delay', this.hass.language)}
-                </mwc-list-item>
-                <mwc-list-item graphic="icon" @click=${(ev: Event) => this._toggleArmOptions(ev, 'force')}>
+                </ha-dropdown-item>
+                <ha-dropdown-item @click=${(ev: Event) => this._toggleArmOptions(ev, 'force')}>
                   <ha-icon
-                    slot="graphic"
-                    icon="${this.armOptions.force ? 'mdi:check' : ''}"
+                    icon="mdi:check"
+                    style="${this.armOptions.force ? '' : 'visibility: hidden'}"
                   ></ha-icon>
                   ${localize('arm_options.force', this.hass.language)}
-                </mwc-list-item>
-              </ha-button-menu>
+                </ha-dropdown-item>
+              </ha-dropdown>
             `
         : ''}
 
@@ -762,23 +759,23 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
         justify-self: center;
         margin-bottom: 10px;
       }
-      ha-button-menu {
+      ha-dropdown {
+        display: block;
         position: absolute;
         right: 4px;
         top: 4px;
       }
+      ha-dropdown span.title {
+        font-weight: bold;
+        display: flex;
+        height: 32px;
+        align-items: center;
+        padding: 0px 8px;
+      }
       @media all and (max-width: 250px) {
-        ha-button-menu {
+        ha-dropdown {
           display: none;
         }
-      }
-      mwc-list-item {
-        --mdc-theme-secondary: var(--primary-color);
-        --mdc-list-item-graphic-margin: 16px;
-      }
-      mwc-list-item .title {
-        font-weight: 500;
-        font-size: 1.1em;
       }
     `;
   }

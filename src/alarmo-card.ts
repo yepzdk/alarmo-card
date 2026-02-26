@@ -73,6 +73,9 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
   @state()
   showBypassedSensors = false;
 
+  @state()
+  private _menuOpen = false;
+
   subscribedEntities: string[] = [];
 
   _codeClearTimer = 0;
@@ -268,32 +271,38 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
 
     return html`
       <ha-card>
-        ${stateObj.state === AlarmStates.Disarmed
+        ${stateObj.state === AlarmStates.Disarmed && !this._config.hide_arm_options
         ? html`
-              <ha-dropdown
-                placement="bottom-end"
-                id="cornerMenu"
-              >
-                <ha-icon-button slot="trigger" .label=${this.hass.localize('ui.common.menu')} .path=${mdiDotsVertical}>
-                </ha-icon-button>
-                <span class="title">
-                  ${localize('arm_options.heading', this.hass.language)}
-                </span>
-                <ha-dropdown-item @click=${(ev: Event) => this._toggleArmOptions(ev, 'skip_delay')}>
-                  <ha-icon
-                    icon="mdi:check"
-                    style="${this.armOptions.skip_delay ? '' : 'visibility: hidden'}"
-                  ></ha-icon>
-                  ${localize('arm_options.skip_delay', this.hass.language)}
-                </ha-dropdown-item>
-                <ha-dropdown-item @click=${(ev: Event) => this._toggleArmOptions(ev, 'force')}>
-                  <ha-icon
-                    icon="mdi:check"
-                    style="${this.armOptions.force ? '' : 'visibility: hidden'}"
-                  ></ha-icon>
-                  ${localize('arm_options.force', this.hass.language)}
-                </ha-dropdown-item>
-              </ha-dropdown>
+              <div class="corner-menu" @click=${(ev: Event) => ev.stopPropagation()}>
+                <ha-icon-button
+                  .path=${mdiDotsVertical}
+                  .label=${this.hass.localize('ui.common.menu')}
+                  @click=${this._toggleMenu}
+                ></ha-icon-button>
+                ${this._menuOpen
+            ? html`
+                  <div class="menu-overlay">
+                    <span class="menu-title">
+                      ${localize('arm_options.heading', this.hass.language)}
+                    </span>
+                    <div class="menu-item" @click=${(ev: Event) => this._toggleArmOptions(ev, 'skip_delay')}>
+                      <ha-icon
+                        icon="mdi:check"
+                        style="${this.armOptions.skip_delay ? '' : 'visibility: hidden'}"
+                      ></ha-icon>
+                      ${localize('arm_options.skip_delay', this.hass.language)}
+                    </div>
+                    <div class="menu-item" @click=${(ev: Event) => this._toggleArmOptions(ev, 'force')}>
+                      <ha-icon
+                        icon="mdi:check"
+                        style="${this.armOptions.force ? '' : 'visibility: hidden'}"
+                      ></ha-icon>
+                      ${localize('arm_options.force', this.hass.language)}
+                    </div>
+                  </div>
+                `
+            : ''}
+              </div>
             `
         : ''}
 
@@ -584,6 +593,27 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
     }
   }
 
+  private _boundCloseMenu = this._closeMenu.bind(this);
+
+  connectedCallback() {
+    super.connectedCallback();
+    document.addEventListener('click', this._boundCloseMenu);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    document.removeEventListener('click', this._boundCloseMenu);
+  }
+
+  private _toggleMenu(ev: Event) {
+    ev.stopPropagation();
+    this._menuOpen = !this._menuOpen;
+  }
+
+  private _closeMenu() {
+    if (this._menuOpen) this._menuOpen = false;
+  }
+
   private _forceRetryClick() {
     if (!this.hass || !this._config || !this._last_command) return;
     let action = this._last_command;
@@ -776,21 +806,45 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
         justify-self: center;
         margin-bottom: 10px;
       }
-      ha-dropdown {
-        display: block;
+      .corner-menu {
         position: absolute;
         right: 4px;
         top: 4px;
+        z-index: 1;
       }
-      ha-dropdown span.title {
+      .menu-overlay {
+        position: absolute;
+        right: 0;
+        top: 100%;
+        background: var(--card-background-color, #fff);
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        min-width: 200px;
+        padding: 8px 0;
+        z-index: 2;
+      }
+      .menu-title {
         font-weight: bold;
         display: flex;
         height: 32px;
         align-items: center;
-        padding: 0px 8px;
+        padding: 0 12px;
+      }
+      .menu-item {
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        cursor: pointer;
+        gap: 8px;
+      }
+      .menu-item:hover {
+        background: var(--secondary-background-color, #f5f5f5);
+      }
+      .menu-item ha-icon {
+        --mdc-icon-size: 20px;
       }
       @media all and (max-width: 250px) {
-        ha-dropdown {
+        .corner-menu {
           display: none;
         }
       }

@@ -84,6 +84,7 @@ export const defaultCardConfig: CardConfig = {
   show_bypassed_sensors: true,
   use_code_dialog: false,
   hide_keypad: false,
+  hide_arm_options: false,
   pending_sound: ''
 };
 

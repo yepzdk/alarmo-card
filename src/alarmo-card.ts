@@ -139,16 +139,23 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
     if (!this._config || !this.hass) return;
     this.pendingSound = new PendingSound(this._config.pending_sound);
     this.clickSound = new ClickSound(this._config.click_sound);
+    if (this._config.pending_sound || this._config.click_sound)
+      console.debug(
+        `alarmo-card: sounds initialised (pending: ${this._config.pending_sound || 'none'}, click: ${this._config
+          .click_sound || 'none'})`
+      );
     this._resumePendingSound();
   }
 
   async firstUpdated() {
+    //init sounds first: the helper loading below can throw, and aborting here
+    //would leave both sounds undefined and the card silent
+    this.initSounds();
     //load the checkbox element
     const ch = await (window as any).loadCardHelpers();
     const c = await ch.createCardElement({ type: 'entities', entities: [] });
     await c.constructor.getConfigElement();
     await this.loadBackendConfig();
-    this.initSounds();
   }
 
   async loadBackendConfig() {

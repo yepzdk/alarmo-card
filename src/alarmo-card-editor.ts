@@ -359,18 +359,24 @@ export class AlarmoCardEditor extends LitElement implements LovelaceCardEditor {
           ></ha-formfield>
 
           <ha-input
-            .label="${localize('editor.pending_sound', this.hass.language)} (${this.hass.localize(
+            class="wide"
+            .label="${localize('editor.pending_sound_label', this.hass.language)} (${this.hass.localize(
               'ui.panel.lovelace.editor.card.config.optional'
             )})"
+            .helper="${localize('editor.pending_sound', this.hass.language)}"
+            helperPersistent
             .value="${this._config!.pending_sound || ''}"
             @input=${(ev: Event) =>
               this._updateConfig('pending_sound', String((ev.target as HTMLInputElement).value).trim())}
           ></ha-input>
 
           <ha-input
-            .label="${localize('editor.click_sound', this.hass.language)} (${this.hass.localize(
+            class="wide"
+            .label="${localize('editor.click_sound_label', this.hass.language)} (${this.hass.localize(
               'ui.panel.lovelace.editor.card.config.optional'
             )})"
+            .helper="${localize('editor.click_sound', this.hass.language)}"
+            helperPersistent
             .value="${this._config!.click_sound || ''}"
             @input=${(ev: Event) =>
               this._updateConfig('click_sound', String((ev.target as HTMLInputElement).value).trim())}
@@ -525,6 +531,9 @@ export class AlarmoCardEditor extends LitElement implements LovelaceCardEditor {
       }
       ha-input {
         width: 100%;
+      }
+      div.grid > ha-input.wide {
+        flex-basis: 100%;
       }
       div.grid {
         display: flex;

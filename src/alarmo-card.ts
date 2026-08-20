@@ -139,6 +139,7 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
     if (!this._config || !this.hass) return;
     this.pendingSound = new PendingSound(this._config.pending_sound);
     this.clickSound = new ClickSound(this._config.click_sound);
+    this._resumePendingSound();
   }
 
   async firstUpdated() {
@@ -554,6 +555,11 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
     }
   }
 
+  private _resumePendingSound() {
+    const state = this._config ? this.hass?.states[this._config.entity]?.state : undefined;
+    if (state && PENDING_STATES.includes(state)) this.pendingSound?.playSound();
+  }
+
   private _duckPendingSound() {
     if (!this._config?.pending_sound || !this._config?.click_sound) return;
     const state = this.hass?.states[this._config.entity]?.state;
@@ -630,6 +636,7 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
   connectedCallback() {
     super.connectedCallback();
     document.addEventListener('click', this._boundCloseMenu);
+    this._resumePendingSound();
   }
 
   disconnectedCallback() {

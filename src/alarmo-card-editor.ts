@@ -358,23 +358,23 @@ export class AlarmoCardEditor extends LitElement implements LovelaceCardEditor {
             ></ha-switch
           ></ha-formfield>
 
-          <ha-textfield
+          <ha-input
             .label="${localize('editor.pending_sound', this.hass.language)} (${this.hass.localize(
               'ui.panel.lovelace.editor.card.config.optional'
             )})"
             .value="${this._config!.pending_sound || ''}"
             @input=${(ev: Event) =>
               this._updateConfig('pending_sound', String((ev.target as HTMLInputElement).value).trim())}
-          ></ha-textfield>
+          ></ha-input>
 
-          <ha-textfield
+          <ha-input
             .label="${localize('editor.click_sound', this.hass.language)} (${this.hass.localize(
               'ui.panel.lovelace.editor.card.config.optional'
             )})"
             .value="${this._config!.click_sound || ''}"
             @input=${(ev: Event) =>
               this._updateConfig('click_sound', String((ev.target as HTMLInputElement).value).trim())}
-          ></ha-textfield>
+          ></ha-input>
 
           <ha-formfield></ha-formfield>
         </div>

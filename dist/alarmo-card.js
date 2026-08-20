@@ -255,17 +255,17 @@ var Ue=function(e){return function(t,i){void 0!==i?i.addInitializer((function(){
             ></ha-switch
           ></ha-formfield>
 
-          <ha-textfield
+          <ha-input
             .label="${Jt("editor.pending_sound",this.hass.language)} (${this.hass.localize("ui.panel.lovelace.editor.card.config.optional")})"
             .value="${this._config.pending_sound||""}"
             @input=${e=>this._updateConfig("pending_sound",String(e.target.value).trim())}
-          ></ha-textfield>
+          ></ha-input>
 
-          <ha-textfield
+          <ha-input
             .label="${Jt("editor.click_sound",this.hass.language)} (${this.hass.localize("ui.panel.lovelace.editor.card.config.optional")})"
             .value="${this._config.click_sound||""}"
             @input=${e=>this._updateConfig("click_sound",String(e.target.value).trim())}
-          ></ha-textfield>
+          ></ha-input>
 
           <ha-formfield></ha-formfield>
         </div>

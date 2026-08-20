@@ -66,16 +66,15 @@ export class PendingSound {
     if (!this.hasSoundUrl || !this.audio) return;
 
     const savedPosition = localStorage.getItem(this.storageKey);
-    const wasPlaying = localStorage.getItem(this.isPlayingKey) === 'true';
 
     if (savedPosition) {
       this.audioPosition = parseFloat(savedPosition);
       this.audio.currentTime = this.audioPosition;
     }
 
-    if (wasPlaying) {
-      this.playSound();
-    }
+    // ponytail: deliberately not resuming playback here. HA re-creates the card
+    // element, and auto-playing per instance left orphaned looping audio that
+    // could never be paused. The alarm state is the source of truth.
   }
 
   saveAudioState() {

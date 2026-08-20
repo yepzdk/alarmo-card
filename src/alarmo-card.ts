@@ -635,6 +635,10 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
   disconnectedCallback() {
     super.disconnectedCallback();
     document.removeEventListener('click', this._boundCloseMenu);
+    // Stop this instance's audio: HA discards and re-creates card elements, and
+    // a looping sound left behind here can never be reached again.
+    this._cancelPendingDuck();
+    this.pendingSound?.stopSound();
   }
 
   private _toggleMenu(ev: Event) {

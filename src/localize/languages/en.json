@@ -15,6 +15,7 @@
     "hide_keypad": "Hide the keypad buttons for entering the code.",
     "hide_arm_options": "Hide arm options menu.",
     "pending_sound": "Set a url to a soundclip that should be played when alarm is pending.",
+    "click_sound": "Set a url to a soundclip that should be played when a button is pressed.",
     "available_actions": "Available actions:",
     "action_dialog": {
       "title": "Customize display of action '{action}'",

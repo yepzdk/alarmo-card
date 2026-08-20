@@ -22,6 +22,7 @@ import './components/alarmo-button';
 import './components/alarmo-code-dialog';
 import './components/alarmo-actions-bar';
 import { PendingSound } from './components/alarmo-pendingsound';
+import { ClickSound } from './components/alarmo-clicksound';
 
 import { SubscribeMixin } from './subscribe-mixin';
 import { localize } from './localize/localize';
@@ -82,6 +83,8 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
 
   pendingSound?: PendingSound;
 
+  clickSound?: ClickSound;
+
   _last_command?: string;
   _last_code?: string;
 
@@ -129,9 +132,10 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
     ];
   }
 
-  private initPendingSound() {
+  private initSounds() {
     if (!this._config || !this.hass) return;
     this.pendingSound = new PendingSound(this._config.pending_sound);
+    this.clickSound = new ClickSound(this._config.click_sound);
   }
 
   async firstUpdated() {
@@ -140,7 +144,7 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
     const c = await ch.createCardElement({ type: 'entities', entities: [] });
     await c.constructor.getConfigElement();
     await this.loadBackendConfig();
-    this.initPendingSound();
+    this.initSounds();
   }
 
   async loadBackendConfig() {
@@ -485,12 +489,14 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
   }
 
   private _handlePadClick(e: MouseEvent): void {
+    this.clickSound?.play();
     const val = (e.currentTarget! as any).value;
     this._clearCodeError();
     this._input = val === 'clear' ? '' : this._input + val;
   }
 
   private async _handleActionClick(ev: Event, action: ArmActions): Promise<void> {
+    this.clickSound?.play();
     (ev.target as HTMLElement).blur();
     this._clearCodeError();
     const stateObj = this.hass!.states[this._config!.entity] as AlarmoEntity;

@@ -16,8 +16,10 @@
     "hide_arm_options": "Hide arm options menu.",
     "pending_sound": "Set a url to a soundclip that should be played when alarm is pending.",
     "click_sound": "Set a url to a soundclip that should be played when a button is pressed.",
+    "disarm_sound": "Set a url to a soundclip that should be played when the alarm is disarmed.",
     "pending_sound_label": "Pending sound URL",
     "click_sound_label": "Button press sound URL",
+    "disarm_sound_label": "Disarm sound URL",
     "available_actions": "Available actions:",
     "action_dialog": {
       "title": "Customize display of action '{action}'",

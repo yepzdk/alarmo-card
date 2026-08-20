@@ -88,6 +88,8 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
 
   clickSound?: ClickSound;
 
+  disarmSound?: ClickSound;
+
   _last_command?: string;
   _last_code?: string;
 
@@ -139,10 +141,11 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
     if (!this._config || !this.hass) return;
     this.pendingSound = new PendingSound(this._config.pending_sound);
     this.clickSound = new ClickSound(this._config.click_sound);
-    if (this._config.pending_sound || this._config.click_sound)
+    this.disarmSound = new ClickSound(this._config.disarm_sound);
+    if (this._config.pending_sound || this._config.click_sound || this._config.disarm_sound)
       console.debug(
         `alarmo-card: sounds initialised (pending: ${this._config.pending_sound || 'none'}, click: ${this._config
-          .click_sound || 'none'})`
+          .click_sound || 'none'}, disarm: ${this._config.disarm_sound || 'none'})`
       );
     this._resumePendingSound();
   }
@@ -244,6 +247,8 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
     }
 
     if (newState.state == AlarmStates.Disarmed) {
+      // Play the disarm sound only on the transition into disarmed
+      if (oldState.state != AlarmStates.Disarmed) this.disarmSound?.play();
       //wipe code in every card update (except InvalidCodeProvided/NoCodeProvided)
       this._clearCode();
     } else if (newState.last_changed !== oldState.last_changed) {

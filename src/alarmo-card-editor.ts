@@ -382,6 +382,18 @@ export class AlarmoCardEditor extends LitElement implements LovelaceCardEditor {
               this._updateConfig('click_sound', String((ev.target as HTMLInputElement).value).trim())}
           ></ha-input>
 
+          <ha-input
+            class="wide"
+            .label="${localize('editor.disarm_sound_label', this.hass.language)} (${this.hass.localize(
+              'ui.panel.lovelace.editor.card.config.optional'
+            )})"
+            .helper="${localize('editor.disarm_sound', this.hass.language)}"
+            helperPersistent
+            .value="${this._config!.disarm_sound || ''}"
+            @input=${(ev: Event) =>
+              this._updateConfig('disarm_sound', String((ev.target as HTMLInputElement).value).trim())}
+          ></ha-input>
+
           <ha-formfield></ha-formfield>
         </div>
       </div>

@@ -70,6 +70,11 @@ Set `click_sound` to a url to get an audible confirmation each time a keypad or 
 
 Use a short clip — it plays once per press, and rapid presses overlap rather than cutting each other off.
 
+### Play a sound when the alarm is disarmed
+Set `disarm_sound` to a url to get a confirmation sound when the alarm is disarmed. It plays on the transition into the disarmed state, so it does not repeat while the alarm stays disarmed.
+
+Sound files must be in a format the browser can decode; `.mp3` is the safest choice.
+
 ## Installation
 <details>
 <summary>click to show installation instructions </summary>
@@ -149,6 +154,7 @@ Configuration using UI mode:
 | `hide_arm_options`      | boolean | Optional     | Hide the arm options menu.                                                                                                                                                      | `false`            |
 | `pending_sound`         | string  | Optional     | Url to a sound clip, played on a loop while the alarm is arming or pending.                                                                                                     |                    |
 | `click_sound`           | string  | Optional     | Url to a sound clip, played once when a keypad or arm/disarm button is pressed.                                                                                                  |                    |
+| `disarm_sound`          | string  | Optional     | Url to a sound clip, played once when the alarm is disarmed.                                                                                                                     |                    |
 | `states`                | object  | Optional     | Customize the display of states in the card.<br>See [state configuration](#state-configuration).                                                                                |                    |
 
 ### State configuration 

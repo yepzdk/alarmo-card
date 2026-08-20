@@ -85,7 +85,9 @@ export const defaultCardConfig: CardConfig = {
   use_code_dialog: false,
   hide_keypad: false,
   hide_arm_options: false,
-  pending_sound: ''
+  pending_sound: '',
+  click_sound: '',
+  disarm_sound: ''
 };
 
 export const minButtonScale = 1;

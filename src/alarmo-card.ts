@@ -12,6 +12,7 @@ import {
   AlarmStates,
   EVENT,
   defaultArmOptions,
+  PENDING_STATES,
 } from './const';
 import { CardConfig, AlarmoEvent, AlarmoEntity, AlarmoConfig } from './types';
 
@@ -22,6 +23,7 @@ import './components/alarmo-button';
 import './components/alarmo-code-dialog';
 import './components/alarmo-actions-bar';
 import { PendingSound } from './components/alarmo-pendingsound';
+import { ClickSound } from './components/alarmo-clicksound';
 
 import { SubscribeMixin } from './subscribe-mixin';
 import { localize } from './localize/localize';
@@ -80,7 +82,13 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
 
   _codeClearTimer = 0;
 
+  _pendingDuckTimer = 0;
+
   pendingSound?: PendingSound;
+
+  clickSound?: ClickSound;
+
+  disarmSound?: ClickSound;
 
   _last_command?: string;
   _last_code?: string;
@@ -129,18 +137,28 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
     ];
   }
 
-  private initPendingSound() {
+  private initSounds() {
     if (!this._config || !this.hass) return;
     this.pendingSound = new PendingSound(this._config.pending_sound);
+    this.clickSound = new ClickSound(this._config.click_sound);
+    this.disarmSound = new ClickSound(this._config.disarm_sound);
+    if (this._config.pending_sound || this._config.click_sound || this._config.disarm_sound)
+      console.debug(
+        `alarmo-card: sounds initialised (pending: ${this._config.pending_sound || 'none'}, click: ${this._config
+          .click_sound || 'none'}, disarm: ${this._config.disarm_sound || 'none'})`
+      );
+    this._resumePendingSound();
   }
 
   async firstUpdated() {
+    //init sounds first: the helper loading below can throw, and aborting here
+    //would leave both sounds undefined and the card silent
+    this.initSounds();
     //load the checkbox element
     const ch = await (window as any).loadCardHelpers();
     const c = await ch.createCardElement({ type: 'entities', entities: [] });
     await c.constructor.getConfigElement();
     await this.loadBackendConfig();
-    this.initPendingSound();
   }
 
   async loadBackendConfig() {
@@ -224,10 +242,13 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
       this.subscribedEntities = [];
 
       // Stop pending sound
+      this._cancelPendingDuck();
       this.pendingSound?.stopSound();
     }
 
     if (newState.state == AlarmStates.Disarmed) {
+      // Play the disarm sound only on the transition into disarmed
+      if (oldState.state != AlarmStates.Disarmed) this.disarmSound?.play();
       //wipe code in every card update (except InvalidCodeProvided/NoCodeProvided)
       this._clearCode();
     } else if (newState.last_changed !== oldState.last_changed) {
@@ -485,12 +506,16 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
   }
 
   private _handlePadClick(e: MouseEvent): void {
+    this.clickSound?.play();
+    this._duckPendingSound();
     const val = (e.currentTarget! as any).value;
     this._clearCodeError();
     this._input = val === 'clear' ? '' : this._input + val;
   }
 
   private async _handleActionClick(ev: Event, action: ArmActions): Promise<void> {
+    this.clickSound?.play();
+    this._duckPendingSound();
     (ev.target as HTMLElement).blur();
     this._clearCodeError();
     const stateObj = this.hass!.states[this._config!.entity] as AlarmoEntity;
@@ -540,6 +565,31 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
       this.warning = '';
       this.armOptions = { ...defaultArmOptions };
     }
+  }
+
+  private _resumePendingSound() {
+    const state = this._config ? this.hass?.states[this._config.entity]?.state : undefined;
+    if (state && PENDING_STATES.includes(state)) this.pendingSound?.playSound();
+  }
+
+  private _duckPendingSound() {
+    if (!this._config?.pending_sound || !this._config?.click_sound) return;
+    const state = this.hass?.states[this._config.entity]?.state;
+    if (!state || !PENDING_STATES.includes(state)) return;
+
+    this.pendingSound?.pauseSound();
+    // Debounced: each press pushes the resume out, so rapid entry stays quiet.
+    clearTimeout(this._pendingDuckTimer);
+    this._pendingDuckTimer = window.setTimeout(() => {
+      this._pendingDuckTimer = 0;
+      const current = this.hass?.states[this._config!.entity]?.state;
+      if (current && PENDING_STATES.includes(current)) this.pendingSound?.playSound();
+    }, 1000);
+  }
+
+  private _cancelPendingDuck() {
+    clearTimeout(this._pendingDuckTimer);
+    this._pendingDuckTimer = 0;
   }
 
   private _showCodeError() {
@@ -598,11 +648,16 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
   connectedCallback() {
     super.connectedCallback();
     document.addEventListener('click', this._boundCloseMenu);
+    this._resumePendingSound();
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     document.removeEventListener('click', this._boundCloseMenu);
+    // Stop this instance's audio: HA discards and re-creates card elements, and
+    // a looping sound left behind here can never be reached again.
+    this._cancelPendingDuck();
+    this.pendingSound?.stopSound();
   }
 
   private _toggleMenu(ev: Event) {

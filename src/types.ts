@@ -16,6 +16,8 @@ export type CardConfig = {
   hide_keypad: boolean;
   hide_arm_options: boolean;
   pending_sound: string;
+  click_sound: string;
+  disarm_sound: string;
 };
 
 export type HideOptions = 'always' | 'never' | 'disarmed' | 'armed';

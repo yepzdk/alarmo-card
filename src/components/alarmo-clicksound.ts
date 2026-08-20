@@ -1,32 +1,24 @@
 export class ClickSound {
-  private soundUrl?: string;
-  // Hold references until playback ends: a bare Audio with nothing pointing at
-  // it can be garbage collected mid-play, which silences the click.
-  private playing: HTMLAudioElement[] = [];
+  private audio?: HTMLAudioElement;
 
   constructor(soundUrl?: string) {
     if (!soundUrl) return;
-    this.soundUrl = soundUrl;
-    // Warm the HTTP cache so the first press is not delayed by the fetch.
-    new Audio(soundUrl).preload = 'auto';
+    // Keep one fully loaded element: creating a fresh Audio per press and
+    // calling play() immediately fails, because the media is not decodable yet.
+    this.audio = new Audio(soundUrl);
+    this.audio.preload = 'auto';
+    this.audio.load();
   }
 
   async play() {
-    if (!this.soundUrl) return;
+    if (!this.audio) return;
 
-    // ponytail: a fresh element per press, so rapid presses overlap instead of
-    // restarting one shared element. Released again on 'ended'.
-    const sound = new Audio(this.soundUrl);
-    this.playing.push(sound);
-    const release = () => {
-      this.playing = this.playing.filter(e => e !== sound);
-    };
-    sound.addEventListener('ended', release, { once: true });
-
+    // ponytail: rewind and replay the one loaded element. A click is short
+    // enough that restarting it on a fast double-press is not worth a pool.
     try {
-      await sound.play();
+      this.audio.currentTime = 0;
+      await this.audio.play();
     } catch (error) {
-      release();
       // Never let a failed blip (e.g. autoplay blocked) break the button it is attached to.
       console.error('Error playing click sound:', error);
     }

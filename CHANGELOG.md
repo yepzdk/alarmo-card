@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- The button press sound went silent after the first press, because each press was played from a cloned audio element that was not reliably usable.
+- The button press sound went silent after the first press, because each press was played from an audio element that had not finished loading.
 - The pending sound could end up playing several times over itself and could not be silenced, because each re-created card instance started its own copy from a saved "was playing" flag.
 
 ### Documentation

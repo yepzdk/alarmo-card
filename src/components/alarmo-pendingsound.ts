@@ -3,25 +3,20 @@ import { PENDING_STATES } from '../const';
 
 export class PendingSound {
   private audio?: HTMLAudioElement;
-  private audioPosition: number = 0;
-  private storageKey: string;
-  private isPlayingKey: string;
   private _hass?: HomeAssistant;
   private _entity?: string;
-  private lastUpdateTime: number = 0;
   private hasSoundUrl: boolean;
 
-  constructor(soundUrl?: string, storageKey: string = 'alarmoPendingAudioPosition') {
+  constructor(soundUrl?: string) {
     this.hasSoundUrl = !!soundUrl;
-    this.storageKey = storageKey;
-    this.isPlayingKey = `${storageKey}_isPlaying`;
 
     if (this.hasSoundUrl) {
       this.audio = new Audio(soundUrl);
       this.audio.loop = true;
-      this.loadAudioState();
-      this.audio.addEventListener('timeupdate', this.throttledTimeUpdate.bind(this));
-      window.addEventListener('beforeunload', this.saveAudioState.bind(this));
+      // Load up front: calling play() on an element that has not buffered yet
+      // is rejected before the media becomes decodable.
+      this.audio.preload = 'auto';
+      this.audio.load();
     }
   }
 
@@ -62,44 +57,12 @@ export class PendingSound {
     }
   }
 
-  loadAudioState() {
-    if (!this.hasSoundUrl || !this.audio) return;
-
-    const savedPosition = localStorage.getItem(this.storageKey);
-
-    if (savedPosition) {
-      this.audioPosition = parseFloat(savedPosition);
-      this.audio.currentTime = this.audioPosition;
-    }
-
-    // ponytail: deliberately not resuming playback here. HA re-creates the card
-    // element, and auto-playing per instance left orphaned looping audio that
-    // could never be paused. The alarm state is the source of truth.
-  }
-
-  saveAudioState() {
-    if (!this.hasSoundUrl || !this.audio) return;
-
-    localStorage.setItem(this.storageKey, this.audioPosition.toString());
-    localStorage.setItem(this.isPlayingKey, this.audio.paused ? 'false' : 'true');
-  }
-
-  throttledTimeUpdate() {
-    if (!this.hasSoundUrl || !this.audio) return;
-
-    const now = Date.now();
-    if (now - this.lastUpdateTime > 1000) {
-      // Update every second
-      this.lastUpdateTime = now;
-      this.audioPosition = this.audio.currentTime;
-      this.saveAudioState();
-    }
-  }
-
   async playSound() {
     if (!this.hasSoundUrl || !this.audio) return;
 
-    this.audio.currentTime = this.audioPosition;
+    // Already sounding: do not restart, or a re-render would stutter the loop.
+    if (!this.audio.paused) return;
+
     try {
       await this.audio.play();
     } catch (error) {
@@ -111,14 +74,12 @@ export class PendingSound {
     if (!this.hasSoundUrl || !this.audio) return;
 
     this.audio.pause();
-    this.saveAudioState();
   }
 
   stopSound() {
     if (!this.hasSoundUrl || !this.audio) return;
 
     this.audio.pause();
-    this.audioPosition = 0;
-    this.saveAudioState();
+    this.audio.currentTime = 0;
   }
 }

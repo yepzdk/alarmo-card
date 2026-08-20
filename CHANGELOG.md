@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - New `click_sound` option: plays a sound clip when a keypad or arm/disarm button is pressed, giving audible confirmation of a press on devices with no tactile feedback.
+- While the alarm is counting down, the pending sound now ducks out for a moment on each button press so the click stays audible, resuming once entry stops.
 
 ### Documentation
 

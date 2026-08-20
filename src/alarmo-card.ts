@@ -12,6 +12,7 @@ import {
   AlarmStates,
   EVENT,
   defaultArmOptions,
+  PENDING_STATES,
 } from './const';
 import { CardConfig, AlarmoEvent, AlarmoEntity, AlarmoConfig } from './types';
 
@@ -80,6 +81,8 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
   subscribedEntities: string[] = [];
 
   _codeClearTimer = 0;
+
+  _pendingDuckTimer = 0;
 
   pendingSound?: PendingSound;
 
@@ -228,6 +231,7 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
       this.subscribedEntities = [];
 
       // Stop pending sound
+      this._cancelPendingDuck();
       this.pendingSound?.stopSound();
     }
 
@@ -490,6 +494,7 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
 
   private _handlePadClick(e: MouseEvent): void {
     this.clickSound?.play();
+    this._duckPendingSound();
     const val = (e.currentTarget! as any).value;
     this._clearCodeError();
     this._input = val === 'clear' ? '' : this._input + val;
@@ -497,6 +502,7 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
 
   private async _handleActionClick(ev: Event, action: ArmActions): Promise<void> {
     this.clickSound?.play();
+    this._duckPendingSound();
     (ev.target as HTMLElement).blur();
     this._clearCodeError();
     const stateObj = this.hass!.states[this._config!.entity] as AlarmoEntity;
@@ -546,6 +552,26 @@ export class AlarmoCard extends SubscribeMixin(LitElement) {
       this.warning = '';
       this.armOptions = { ...defaultArmOptions };
     }
+  }
+
+  private _duckPendingSound() {
+    if (!this._config?.pending_sound || !this._config?.click_sound) return;
+    const state = this.hass?.states[this._config.entity]?.state;
+    if (!state || !PENDING_STATES.includes(state)) return;
+
+    this.pendingSound?.pauseSound();
+    // Debounced: each press pushes the resume out, so rapid entry stays quiet.
+    clearTimeout(this._pendingDuckTimer);
+    this._pendingDuckTimer = window.setTimeout(() => {
+      this._pendingDuckTimer = 0;
+      const current = this.hass?.states[this._config!.entity]?.state;
+      if (current && PENDING_STATES.includes(current)) this.pendingSound?.playSound();
+    }, 1000);
+  }
+
+  private _cancelPendingDuck() {
+    clearTimeout(this._pendingDuckTimer);
+    this._pendingDuckTimer = 0;
   }
 
   private _showCodeError() {
